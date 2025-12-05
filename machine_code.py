@@ -241,7 +241,9 @@ def create_gui():
     """创建并运行图形界面"""
     root = tk.Tk()
     root.title("XMachineID")
-    root.geometry("620x380")
+    # 调整窗口尺寸
+    win_w, win_h = 820, 480
+    root.geometry(f"{win_w}x{win_h}")
     root.configure(bg="#dbe2ef")
 
     # 顶部说明
@@ -270,7 +272,7 @@ def create_gui():
     entry_path.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
     # 结果显示区域
-    text_result = tk.Text(root, height=12)
+    text_result = tk.Text(root, height=14)
 
     text_result.pack(fill="both", expand=True, padx=10, pady=(5, 10))
 
@@ -386,8 +388,9 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"所有备份已删除")
 
+    # 底部一行：左(生成新 ID)，中(保留最近天数+清理备份)，右(删除所有备份)
     frame_btn = tk.Frame(root, bg="#dbe2ef")
-    frame_btn.pack(fill="x", padx=10, pady=(0, 10))
+    frame_btn.pack(fill="x", padx=10, pady=(5, 10))
 
     # 统一按钮样式
     btn_font = ("Microsoft YaHei", 10, "bold")
@@ -399,20 +402,40 @@ def create_gui():
         "font": btn_font,
     }
 
-    btn_run = tk.Button(frame_btn, text=u"生成新 ID", command=on_run_clicked, **btn_kwargs)
-    btn_run.pack(side="left", padx=(0, 10))
+    # 左侧：重置 ID
+    frame_left = tk.Frame(frame_btn, bg="#dbe2ef")
+    frame_left.pack(side="left", expand=True, fill="x", padx=5)
+    btn_run = tk.Button(frame_left, text=u"重置 ID", command=on_run_clicked, **btn_kwargs)
+    btn_run.pack(fill="x")
 
-    # 清理备份相关控件
-    tk.Label(frame_btn, text=u"保留最近天数:", bg="#dbe2ef").pack(side="left", padx=(5, 0))
-    entry_days = tk.Entry(frame_btn, width=5)
+    # 中间：保留最近天数 + 清理备份（在本列中居中）
+    frame_middle = tk.Frame(frame_btn, bg="#dbe2ef")
+    frame_middle.pack(side="left", expand=True, fill="x", padx=5)
+
+    frame_mid_inner = tk.Frame(frame_middle, bg="#dbe2ef", bd=1, relief="solid", highlightthickness=0)
+    frame_mid_inner.pack(side="top", expand=True, padx=5, pady=0)
+
+    tk.Label(frame_mid_inner, text=u"保留最近天数:", bg="#dbe2ef").pack(side="left")
+    entry_days = tk.Entry(frame_mid_inner, width=6)
     entry_days.insert(0, "3")
-    entry_days.pack(side="left", padx=(5, 10))
+    entry_days.pack(side="left", padx=(5, 5))
 
-    btn_clean = tk.Button(frame_btn, text=u"清理备份", command=on_clean_clicked, **btn_kwargs)
-    btn_clean.pack(side="left", padx=(0, 10))
+    btn_clean = tk.Button(frame_mid_inner, text=u"清理备份", command=on_clean_clicked, **btn_kwargs)
+    btn_clean.pack(side="left")
 
-    btn_clean_all = tk.Button(frame_btn, text=u"全部删除备份", command=on_clean_all_clicked, **btn_kwargs)
-    btn_clean_all.pack(side="left", padx=(0, 0))
+    # 右侧：删除所有备份
+    frame_right = tk.Frame(frame_btn, bg="#dbe2ef")
+    frame_right.pack(side="left", expand=True, fill="x", padx=5)
+    btn_clean_all = tk.Button(frame_right, text=u"删除所有备份", command=on_clean_all_clicked, **btn_kwargs)
+    btn_clean_all.pack(fill="x")
+
+    # 使窗口居中
+    root.update_idletasks()
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+    x = (sw - win_w) // 2
+    y = (sh - win_h) // 2
+    root.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
     root.mainloop()
 
