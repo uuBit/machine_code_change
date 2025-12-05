@@ -207,6 +207,36 @@ def clean_backup_files(days=3):
         return False, u"生成备份清理计划时出错: {}".format(e), []
 
 
+def delete_all_backups():
+    """生成“删除所有备份”的计划，返回 (ok, 消息文本, 待删除文件列表)。"""
+    try:
+        storage_path = get_storage_path()
+        directory = os.path.dirname(storage_path)
+        if not directory or not os.path.isdir(directory):
+            return False, u"未找到配置目录: {}".format(directory), []
+
+        base_name = os.path.basename(storage_path)
+        prefix = base_name + ".backup_"
+
+        to_delete = []
+        for name in os.listdir(directory):
+            if not name.startswith(prefix):
+                continue
+            full_path = os.path.join(directory, name)
+            if os.path.isfile(full_path):
+                to_delete.append(full_path)
+
+        if not to_delete:
+            return True, u"未找到任何备份文件。", []
+
+        lines = [u"将删除以下所有备份文件:"]
+        lines.extend(to_delete)
+        preview_text = "\n".join(lines)
+        return True, preview_text, to_delete
+    except Exception as e:
+        return False, u"生成删除所有备份计划时出错: {}".format(e), []
+
+
 def create_gui():
     """创建并运行图形界面"""
     root = tk.Tk()
@@ -307,6 +337,49 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"备份清理完成")
 
+    def on_clean_all_clicked():
+        ok, msg, to_delete = delete_all_backups()
+
+        # 先在文本区域展示将要删除的所有备份
+        append_result(msg)
+
+        if not ok:
+            messagebox.showerror(u"错误", msg)
+            return
+
+        if not to_delete:
+            messagebox.showinfo(u"完成", u"没有任何备份文件。")
+            return
+
+        if not messagebox.askyesno(
+            u"确认删除所有备份",
+            u"共找到 {} 个备份文件，将全部删除（不保留最新一份）。\n\n是否继续删除？".format(len(to_delete))
+        ):
+            return
+
+        removed = []
+        errors = []
+        for path in to_delete:
+            try:
+                os.remove(path)
+                removed.append(path)
+            except Exception as e:
+                errors.append((path, e))
+
+        result_lines = [msg, "", u"实际已删除 {} 个备份。".format(len(removed))]
+        if errors:
+            result_lines.append(u"以下备份删除失败：")
+            for path, err in errors:
+                result_lines.append(u"{}    错误: {}".format(path, err))
+
+        final_msg = "\n".join(result_lines)
+        append_result(final_msg)
+
+        if errors:
+            messagebox.showerror(u"部分失败", final_msg)
+        else:
+            messagebox.showinfo(u"完成", u"所有备份已删除")
+
     frame_btn = tk.Frame(root)
     frame_btn.pack(fill="x", padx=10, pady=(0, 10))
 
@@ -321,6 +394,9 @@ def create_gui():
 
     btn_clean = tk.Button(frame_btn, text=u"清理备份", command=on_clean_clicked)
     btn_clean.pack(side="left", padx=(10, 0))
+
+    btn_clean_all = tk.Button(frame_btn, text=u"全部删除备份", command=on_clean_all_clicked)
+    btn_clean_all.pack(side="left", padx=(10, 0))
 
     root.mainloop()
 
