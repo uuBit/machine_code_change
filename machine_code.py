@@ -379,6 +379,10 @@ def create_gui():
     text_result.pack(side="top", fill="both", expand=True, padx=10, pady=(5, 10))
 
 
+    # 悬浮提示窗口句柄
+    backup_tip = None
+
+
     def refresh_ids():
         ok, ids = read_current_ids()
         if ok:
@@ -398,7 +402,38 @@ def create_gui():
         text_result.config(state="disabled")
 
 
+    def show_backup_tip(event):
+        nonlocal backup_tip
+        if backup_tip is not None:
+            return
+        tw = tk.Toplevel(root)
+        tw.wm_overrideredirect(True)
+        x = event.x_root + 10
+        y = event.y_root + 10
+        tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(
+            tw,
+            text=u"勾选后，在重置 ID 前会自动创建当前配置文件的备份（storage.json.backup_时间戳）。",
+            bg="#ffffe0",
+            relief="solid",
+            borderwidth=1,
+            justify="left",
+        )
+        label.pack(ipadx=4, ipady=2)
+        backup_tip = tw
+
+
+    def hide_backup_tip(event):
+        nonlocal backup_tip
+        if backup_tip is not None:
+            backup_tip.destroy()
+            backup_tip = None
+
+
     def on_run_clicked():
+        storage_path = get_storage_path()
+        if backup_var.get():
+            backup_file(storage_path)
         ok, msg = run_update_with_result()
         append_result(msg)
         if ok:
@@ -509,9 +544,7 @@ def create_gui():
 
     # 底部一行：左(生成新 ID)，中(保留最近天数+清理备份)，右(全部删除备份)
     frame_btn = tk.Frame(root, bg="#dbe2ef")
-    # 固定在窗口底部，窗口拉伸时保持贴底
     frame_btn.pack(side="bottom", fill="x", padx=10, pady=(5, 10))
-
 
     # 统一按钮样式
     btn_font = ("Microsoft YaHei", 10, "bold")
@@ -523,11 +556,47 @@ def create_gui():
         "font": btn_font,
     }
 
-    # 左侧：重置 ID
+    # 左侧：重置 ID + 启用备份（同一域）
     frame_left = tk.Frame(frame_btn, bg="#dbe2ef")
     frame_left.pack(side="left", expand=True, fill="x", padx=5)
-    btn_run = tk.Button(frame_left, text=u"重置 ID", command=on_run_clicked, **btn_kwargs)
+    frame_left_inner = tk.Frame(frame_left, bg="#dbe2ef", bd=1, relief="solid", highlightthickness=0)
+    frame_left_inner.pack(side="top", expand=True, fill="x")
+
+    row_left = tk.Frame(frame_left_inner, bg="#dbe2ef")
+    row_left.pack(fill="x")
+
+    # 使用左右两个子区域，左侧扩展、右侧保持内容宽度，形成约 8:2 的宽度比例
+    frame_left_btn = tk.Frame(row_left, bg="#dbe2ef")
+    frame_left_btn.pack(side="left", expand=True, fill="x")
+    frame_left_opts = tk.Frame(row_left, bg="#dbe2ef")
+    frame_left_opts.pack(side="left")
+
+    # 左侧：重置 ID 按钮占满自身区域宽度
+    btn_run = tk.Button(frame_left_btn, text=u"重置 ID", command=on_run_clicked, **btn_kwargs)
     btn_run.pack(fill="x")
+
+    # 右侧：启用备份 + 带提示的问号
+    backup_var = tk.BooleanVar(value=False)
+    chk_backup = tk.Checkbutton(
+        frame_left_opts,
+        text=u"启用备份",
+        variable=backup_var,
+        bg="#dbe2ef",
+        anchor="w",
+    )
+    chk_backup.pack(side="left", padx=(8, 0))
+
+    label_backup_help = tk.Label(
+        frame_left_opts,
+        text="?",
+        bg="#caca00",
+        fg="#112d4e",
+        font=("Microsoft YaHei", 10, "bold"),
+    )
+    label_backup_help.pack(side="left", padx=(4, 0))
+
+    label_backup_help.bind("<Enter>", show_backup_tip)
+    label_backup_help.bind("<Leave>", hide_backup_tip)
 
     # 中间：保留最近天数 + 清理备份（在本列中居中）
     frame_middle = tk.Frame(frame_btn, bg="#dbe2ef")
