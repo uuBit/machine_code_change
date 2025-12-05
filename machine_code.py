@@ -591,7 +591,9 @@ def create_gui():
         text="?",
         bg="#caca00",
         fg="#112d4e",
-        font=("Microsoft YaHei", 10, "bold"),
+        font=("Microsoft YaHei", 9, "bold"),
+        padx=3,
+        pady=0,
     )
     label_backup_help.pack(side="left", padx=(4, 0))
 
