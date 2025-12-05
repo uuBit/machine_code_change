@@ -1,0 +1,139 @@
+machine_code.py 打包为 EXE 的详细步骤说明
+=========================================
+
+本说明以 Windows + Python 3.x 为前提，使用 PyInstaller 工具，将 `machine_code.py` 打包成独立的 exe 文件。
+
+一、准备环境
+----------------
+1. 安装 Python
+   - 访问官网：https://www.python.org/downloads/
+   - 下载适合你系统的 Windows 安装包（64 位一般是 `Windows x86-64 executable installer`）。
+   - 安装时务必勾选：`Add Python 3.x to PATH`，然后选择 `Install Now` 或 `Customize installation`。
+   - 安装完成后，在 PowerShell 中执行：
+     - `python --version`
+     - 能看到版本号（例如 `Python 3.8.x`）说明安装成功。
+
+2. 确认 pip 可用
+   - 在 PowerShell 中执行：`python -m pip --version`
+   - 如果能看到版本号说明 pip 已经可用。
+
+3. （推荐）为项目创建虚拟环境
+   - 在 `machine_code` 目录下执行：
+     - `python -m venv .venv`
+   - 激活虚拟环境（PowerShell）：
+     - `.\.venv\Scripts\Activate.ps1`
+   - 激活成功后，命令行前面一般会多一个 `(.venv)` 前缀。
+
+
+二、安装 PyInstaller
+----------------------
+1. 在（已激活的）虚拟环境中执行：
+   - `python -m pip install --upgrade pip`
+   - `python -m pip install pyinstaller`
+
+2. 检查是否安装成功：
+   - `pyinstaller --version`
+   - 能看到版本号说明 PyInstaller 可用。
+
+
+三、在项目目录下准备打包
+----------------------------
+1. 确认当前目录
+   - 在 PowerShell 中切换到：`d:\python_project\machine_code`
+   - 之后的打包命令都在这个目录下执行。
+
+2. 确认入口脚本
+   - 入口文件为：`machine_code.py`
+   - 脚本中已经有：
+     - `if __name__ == '__main__': main()`
+   - 这就是 PyInstaller 的主入口。
+
+
+四、最基本的打包命令
+------------------------
+1. 在 `d:\python_project\machine_code` 目录下执行：
+   - `pyinstaller --noconsole --onefile machine_code.py`
+
+2. 参数说明：
+   - `--onefile`：打包成单个 exe 文件（方便分发）。
+   - `--noconsole`：不显示控制台窗口（只弹出 Tkinter 图形界面）。
+   - 不加 `--noconsole` 则会有黑色命令行窗口一起出现。
+
+3. 命令执行完成后，会在当前目录下生成：
+   - `build/` 目录：中间文件，可以忽略。
+   - `dist/` 目录：最终成品在这里。
+   - 若成功，则会看到：`dist/machine_code.exe`。
+
+
+五、测试打包后的 exe
+------------------------
+1. 双击运行
+   - 在资源管理器中打开：`d:\python_project\machine_code\dist`。
+   - 双击 `machine_code.exe`。
+   - 应该弹出与你平时运行脚本相同的 GUI 窗口。
+
+2. 命令行运行（可查看错误信息）
+   - 在 PowerShell 中：
+     - 切到 `dist` 目录：`cd d:\python_project\machine_code\dist`
+     - 执行：`.\machine_code.exe`
+   - 如果程序有异常，会在命令行中输出错误日志，方便排查。
+
+
+六、可选：指定图标、文件名等
+--------------------------------
+1. 修改 exe 文件名
+   - 例如想要输出为 `XMachineID.exe`，可以使用：
+     - `pyinstaller --noconsole --onefile --name XMachineID machine_code.py`
+   - 打包完成后，在 `dist` 目录里会生成 `XMachineID.exe`。
+
+2. 添加图标（.ico 文件）
+   - 准备一个 `icon.ico` 文件，放在 `machine_code` 目录下。
+   - 执行：
+     - `pyinstaller --noconsole --onefile --name XMachineID --icon=icon.ico machine_code.py`
+   - 注意：
+     - 图标文件必须为 `.ico` 格式，png/jpg 等需要先转换。
+
+
+七、常见问题与排查
+----------------------
+1. 打包后运行报错，找不到模块
+   - 确认在虚拟环境中安装了所有依赖：
+     - 当前脚本主要依赖标准库和 Tkinter，一般无需额外安装。
+   - 如果你后来引入了第三方库（例如 `requests`），需要在虚拟环境中：
+     - `python -m pip install requests`
+     - 然后重新执行 PyInstaller 打包命令。
+
+2. 程序运行时找不到配置文件 `storage.json`
+   - 本脚本使用 `get_storage_path()` 自动寻找 Cursor 的配置目录。
+   - 确保目标机器上已经安装并使用过 Cursor，让对应的 `storage.json` 存在。
+
+3. 打包后的 EXE 过大
+   - `--onefile` 模式会把 Python 运行时一起打包进去，体积在几十 MB 属于正常现象。
+   - 可以通过删除 `build` 目录来清理临时文件，但不要删 `dist` 下的 exe。
+
+
+八、推荐的完整命令示例
+--------------------------
+1. 不需要图标、只要单文件无控制台：
+   - `pyinstaller --noconsole --onefile machine_code.py`
+
+2. 自定义名称 + 图标：
+   - 在 `d:\python_project\machine_code` 目录下：
+     - `pyinstaller --noconsole --onefile --name XMachineID --icon=icon.ico machine_code.py`
+
+
+九、后续更新代码后的打包流程
+--------------------------------
+1. 修改 `machine_code.py` 代码并保存。
+2. 在同一虚拟环境中，重新执行打包命令，例如：
+   - `pyinstaller --noconsole --onefile machine_code.py`
+3. 覆盖旧的 `dist\machine_code.exe` 即可。
+
+
+十、小结
+----------
+- 先确保：Python + pip + （可选）虚拟环境。
+- 安装 PyInstaller：`python -m pip install pyinstaller`。
+- 在 `d:\python_project\machine_code` 目录下执行打包命令。
+- EXE 结果始终在 `dist` 目录中。
+- 以后每次改动代码，只需重新运行同一条 PyInstaller 命令即可生成新的 exe。
