@@ -284,7 +284,6 @@ def create_gui():
     tk.Label(frame_path, text=u"配置文件路径:", bg="#dbe2ef").pack(side="left")
 
     entry_path = tk.Entry(frame_path)
-
     entry_path.insert(0, storage_path)
     entry_path.config(state="readonly")
     entry_path.pack(side="left", fill="x", expand=True, padx=(5, 0))
@@ -306,12 +305,66 @@ def create_gui():
     )
     label_ids_title.pack(fill="x", padx=4, pady=(4, 2))
 
-    label_machine = tk.Label(frame_ids, textvariable=var_machine, anchor="w", bg="#dbe2ef")
-    label_machine.pack(fill="x", padx=4, pady=(0, 1))
-    label_mac = tk.Label(frame_ids, textvariable=var_mac, anchor="w", bg="#dbe2ef")
-    label_mac.pack(fill="x", padx=4, pady=(0, 1))
-    label_dev = tk.Label(frame_ids, textvariable=var_dev, anchor="w", bg="#dbe2ef")
-    label_dev.pack(fill="x", padx=4, pady=(0, 4))
+    # machineId 行：前缀红色加粗 + 数值正常样式
+    row_machine = tk.Frame(frame_ids, bg="#dbe2ef")
+    row_machine.pack(fill="x", padx=4, pady=(0, 1))
+    label_machine_prefix = tk.Label(
+        row_machine,
+        text=u"machineId:",
+        bg="#dbe2ef",
+        fg="red",
+        font=("Microsoft YaHei", 10, "bold"),
+        anchor="w",
+    )
+    label_machine_prefix.pack(side="left")
+    label_machine_value = tk.Label(
+        row_machine,
+        textvariable=var_machine,
+        bg="#dbe2ef",
+        anchor="w",
+    )
+    label_machine_value.pack(side="left", fill="x", expand=True, padx=(4, 0))
+
+    # macMachineId 行
+    row_mac = tk.Frame(frame_ids, bg="#dbe2ef")
+    row_mac.pack(fill="x", padx=4, pady=(0, 1))
+    label_mac_prefix = tk.Label(
+        row_mac,
+        text=u"macMachineId:",
+        bg="#dbe2ef",
+        fg="red",
+        font=("Microsoft YaHei", 10, "bold"),
+        anchor="w",
+    )
+    label_mac_prefix.pack(side="left")
+    label_mac_value = tk.Label(
+        row_mac,
+        textvariable=var_mac,
+        bg="#dbe2ef",
+        anchor="w",
+    )
+    label_mac_value.pack(side="left", fill="x", expand=True, padx=(4, 0))
+
+    # devDeviceId 行
+    row_dev = tk.Frame(frame_ids, bg="#dbe2ef")
+    row_dev.pack(fill="x", padx=4, pady=(0, 4))
+    label_dev_prefix = tk.Label(
+        row_dev,
+        text=u"devDeviceId:",
+        bg="#dbe2ef",
+        fg="red",
+        font=("Microsoft YaHei", 10, "bold"),
+        anchor="w",
+    )
+    label_dev_prefix.pack(side="left")
+    label_dev_value = tk.Label(
+        row_dev,
+        textvariable=var_dev,
+        bg="#dbe2ef",
+        anchor="w",
+    )
+    label_dev_value.pack(side="left", fill="x", expand=True, padx=(4, 0))
+
 
     # 结果显示区域
     text_result = tk.Text(root, height=14)
@@ -321,19 +374,19 @@ def create_gui():
     def refresh_ids():
         ok, ids = read_current_ids()
         if ok:
-            var_machine.set(u"machineId: {}".format(ids.get('machineId', u'-')))
-            var_mac.set(u"macMachineId: {}".format(ids.get('macMachineId', u'-')))
-            var_dev.set(u"devDeviceId: {}".format(ids.get('devDeviceId', u'-')))
+            var_machine.set(ids.get('machineId', u'-'))
+            var_mac.set(ids.get('macMachineId', u'-'))
+            var_dev.set(ids.get('devDeviceId', u'-'))
         else:
-            var_machine.set(u"machineId: -")
-            var_mac.set(u"macMachineId: -")
-            var_dev.set(u"devDeviceId: -")
+            var_machine.set(u"-")
+            var_mac.set(u"-")
+            var_dev.set(u"-")
+
 
     def append_result(text):
         text_result.config(state="normal")
         text_result.delete("1.0", "end")
         text_result.insert("end", text)
-        text_result.see("end")
         text_result.config(state="disabled")
 
     def on_run_clicked():
