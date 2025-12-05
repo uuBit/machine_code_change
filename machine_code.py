@@ -118,6 +118,25 @@ def run_update_with_result():
         return False, u"错误: {}".format(e)
 
 
+def read_current_ids():
+    try:
+        storage_path = get_storage_path()
+        if not os.path.exists(storage_path):
+            return False, {}
+
+        with open(storage_path, 'r') as f:
+            data = json.load(f)
+
+        ids = {
+            'machineId': data.get('telemetry.machineId', u'-'),
+            'macMachineId': data.get('telemetry.macMachineId', u'-'),
+            'devDeviceId': data.get('telemetry.devDeviceId', u'-'),
+        }
+        return True, ids
+    except Exception:
+        return False, {}
+
+
 def clean_backup_files(days=3):
     """生成备份清理计划（不实际删除），返回 (ok, 消息文本, 待删除文件列表)。
 
@@ -202,7 +221,6 @@ def clean_backup_files(days=3):
         preview_text = "\n".join(lines)
         # 返回待删除的路径列表（仅路径，不含时间）
         return True, preview_text, [p for p, _ in to_delete]
-
     except Exception as e:
         return False, u"生成备份清理计划时出错: {}".format(e), []
 
@@ -271,10 +289,45 @@ def create_gui():
     entry_path.config(state="readonly")
     entry_path.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
+    # 显示当前 ID
+    frame_ids = tk.Frame(root, bg="#dbe2ef", bd=1, relief="solid")
+    frame_ids.pack(fill="x", padx=10, pady=(8, 8))
+
+    var_machine = tk.StringVar()
+    var_mac = tk.StringVar()
+    var_dev = tk.StringVar()
+
+    label_ids_title = tk.Label(
+        frame_ids,
+        text=u"当前设备 ID：",
+        bg="#dbe2ef",
+        anchor="w",
+        font=("Microsoft YaHei", 10, "bold"),
+    )
+    label_ids_title.pack(fill="x", padx=4, pady=(4, 2))
+
+    label_machine = tk.Label(frame_ids, textvariable=var_machine, anchor="w", bg="#dbe2ef")
+    label_machine.pack(fill="x", padx=4, pady=(0, 1))
+    label_mac = tk.Label(frame_ids, textvariable=var_mac, anchor="w", bg="#dbe2ef")
+    label_mac.pack(fill="x", padx=4, pady=(0, 1))
+    label_dev = tk.Label(frame_ids, textvariable=var_dev, anchor="w", bg="#dbe2ef")
+    label_dev.pack(fill="x", padx=4, pady=(0, 4))
+
     # 结果显示区域
     text_result = tk.Text(root, height=14)
 
     text_result.pack(fill="both", expand=True, padx=10, pady=(5, 10))
+
+    def refresh_ids():
+        ok, ids = read_current_ids()
+        if ok:
+            var_machine.set(u"machineId: {}".format(ids.get('machineId', u'-')))
+            var_mac.set(u"macMachineId: {}".format(ids.get('macMachineId', u'-')))
+            var_dev.set(u"devDeviceId: {}".format(ids.get('devDeviceId', u'-')))
+        else:
+            var_machine.set(u"machineId: -")
+            var_mac.set(u"macMachineId: -")
+            var_dev.set(u"devDeviceId: -")
 
     def append_result(text):
         text_result.config(state="normal")
@@ -287,6 +340,7 @@ def create_gui():
         ok, msg = run_update_with_result()
         append_result(msg)
         if ok:
+            refresh_ids()
             messagebox.showinfo(u"完成", u"已成功重置 ID")
         else:
             messagebox.showerror(u"错误", msg)
@@ -388,7 +442,7 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"所有备份已删除")
 
-    # 底部一行：左(生成新 ID)，中(保留最近天数+清理备份)，右(删除所有备份)
+    # 底部一行：左(生成新 ID)，中(保留最近天数+清理备份)，右(全部删除备份)
     frame_btn = tk.Frame(root, bg="#dbe2ef")
     frame_btn.pack(fill="x", padx=10, pady=(5, 10))
 
@@ -429,12 +483,16 @@ def create_gui():
     btn_clean_all = tk.Button(frame_right, text=u"删除所有备份", command=on_clean_all_clicked, **btn_kwargs)
     btn_clean_all.pack(fill="x")
 
-    # 使窗口居中
+    refresh_ids()
+
+    # 使窗口居中并向上偏移一部分
     root.update_idletasks()
     sw = root.winfo_screenwidth()
     sh = root.winfo_screenheight()
     x = (sw - win_w) // 2
-    y = (sh - win_h) // 2
+    y_center = (sh - win_h) // 2
+    offset = int(sh * 0.2)
+    y = max(0, y_center - offset)
     root.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
     root.mainloop()
