@@ -8,7 +8,7 @@ import json
 import uuid
 import shutil
 import platform
-from datetime import datetime
+from datetime import datetime, timedelta
 import errno
 
 try:
@@ -118,6 +118,95 @@ def run_update_with_result():
         return False, u"错误: {}".format(e)
 
 
+def clean_backup_files(days=3):
+    """生成备份清理计划（不实际删除），返回 (ok, 消息文本, 待删除文件列表)。
+
+    规则：
+    - 只考虑当前 storage.json 同目录下、以 "storage.json.backup_" 开头的文件；
+    - 解析文件名中的时间戳 YYYYMMDD_HHMMSS；
+    - 早于指定天数 (days) 的备份才有资格被删除；
+    - 始终保留最新的一份备份（即使它早于 days 天也不删）。
+    """
+    try:
+        storage_path = get_storage_path()
+        directory = os.path.dirname(storage_path)
+        if not directory or not os.path.isdir(directory):
+            return False, u"未找到配置目录: {}".format(directory), []
+
+        base_name = os.path.basename(storage_path)
+        prefix = base_name + ".backup_"
+
+        backups = []  # [(full_path, dt)]
+        for name in os.listdir(directory):
+            if not name.startswith(prefix):
+                continue
+            full_path = os.path.join(directory, name)
+            if not os.path.isfile(full_path):
+                continue
+
+            ts_str = name[len(prefix):]
+            dt = None
+            try:
+                dt = datetime.strptime(ts_str, "%Y%m%d_%H%M%S")
+            except ValueError:
+                # 时间戳解析失败的备份，不参与自动删除
+                pass
+            backups.append((full_path, dt))
+
+        if not backups:
+            return True, u"未找到任何备份文件。", []
+
+        # 按时间排序，无法解析时间戳的放在最后（不自动删除）
+        backups_sorted = sorted(backups, key=lambda x: x[1] or datetime.max)
+        newest_path, newest_dt = backups_sorted[-1]
+
+        # 根据传入的天数计算阈值
+        cutoff = datetime.now() - timedelta(days=days)
+
+        to_delete = []
+        for path, dt in backups_sorted:
+            # 始终保留最新一份
+            if path == newest_path:
+                continue
+            # 没有有效时间戳的不自动删除
+            if dt is None:
+                continue
+            # 只删除早于 days 天的
+            if dt < cutoff:
+                to_delete.append((path, dt))
+
+        # 生成预览信息
+        lines = []
+        if not to_delete:
+            lines.append(u"找到 {} 个备份文件，但没有符合清理条件的备份。".format(len(backups)))
+            lines.append(u"（规则：早于 {} 天，且不是最新一份；最新一份始终保留。）".format(days))
+            return True, "\n".join(lines), []
+
+        lines.append(u"总共找到 {} 个备份文件。".format(len(backups)))
+        lines.append(u"将删除以下备份（早于 {} 天，且不是最新一份）：".format(days))
+        for path, dt in to_delete:
+            if dt is not None:
+                dt_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                dt_str = u"时间未知"
+            lines.append(u"{}    时间: {}".format(path, dt_str))
+
+        if newest_dt is not None:
+            newest_str = newest_dt.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            newest_str = u"时间未知"
+        lines.append("")
+        lines.append(u"将保留最新的一份备份:")
+        lines.append(u"{}    时间: {}".format(newest_path, newest_str))
+
+        preview_text = "\n".join(lines)
+        # 返回待删除的路径列表（仅路径，不含时间）
+        return True, preview_text, [p for p, _ in to_delete]
+
+    except Exception as e:
+        return False, u"生成备份清理计划时出错: {}".format(e), []
+
+
 def create_gui():
     """创建并运行图形界面"""
     root = tk.Tk()
@@ -164,11 +253,74 @@ def create_gui():
         else:
             messagebox.showerror(u"错误", msg)
 
+    def on_clean_clicked():
+        # 从输入框获取天数，非法输入则回退到默认 3 天
+        raw_days = entry_days.get().strip()
+        try:
+            days = int(raw_days)
+            if days <= 0:
+                raise ValueError
+        except Exception:
+            days = 3
+
+        ok, msg, to_delete = clean_backup_files(days)
+
+        # 先在文本区域展示清理计划
+        append_result(msg)
+
+        if not ok:
+            messagebox.showerror(u"错误", msg)
+            return
+
+        if not to_delete:
+            messagebox.showinfo(u"完成", u"没有符合条件的备份可清理。")
+            return
+
+        # 弹窗确认
+        if not messagebox.askyesno(
+            u"确认删除",
+            u"共找到 {} 个符合条件的备份将被删除（最新一份会保留）。\n\n是否继续删除？".format(len(to_delete))
+        ):
+            return
+
+        # 实际执行删除
+        removed = []
+        errors = []
+        for path in to_delete:
+            try:
+                os.remove(path)
+                removed.append(path)
+            except Exception as e:
+                errors.append((path, e))
+
+        result_lines = [msg, "", u"实际已删除 {} 个备份。".format(len(removed))]
+        if errors:
+            result_lines.append(u"以下备份删除失败：")
+            for path, err in errors:
+                result_lines.append(u"{}    错误: {}".format(path, err))
+
+        final_msg = "\n".join(result_lines)
+        append_result(final_msg)
+
+        if errors:
+            messagebox.showerror(u"部分失败", final_msg)
+        else:
+            messagebox.showinfo(u"完成", u"备份清理完成")
+
     frame_btn = tk.Frame(root)
     frame_btn.pack(fill="x", padx=10, pady=(0, 10))
 
     btn_run = tk.Button(frame_btn, text=u"生成新 ID", command=on_run_clicked)
     btn_run.pack(side="left")
+
+    # 清理备份相关控件
+    tk.Label(frame_btn, text=u"保留最近天数:").pack(side="left", padx=(15, 0))
+    entry_days = tk.Entry(frame_btn, width=5)
+    entry_days.insert(0, "3")
+    entry_days.pack(side="left", padx=(3, 0))
+
+    btn_clean = tk.Button(frame_btn, text=u"清理备份", command=on_clean_clicked)
+    btn_clean.pack(side="left", padx=(10, 0))
 
     root.mainloop()
 
