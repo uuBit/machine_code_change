@@ -259,8 +259,9 @@ def create_gui():
     """创建并运行图形界面"""
     root = tk.Tk()
     root.title("XMachineID")
-    # 调整窗口尺寸
-    win_w, win_h = 820, 480
+    # 调整窗口尺寸（略微增加高度）
+    win_w, win_h = 820, 490
+
     root.geometry(f"{win_w}x{win_h}")
     root.configure(bg="#dbe2ef")
 
