@@ -367,7 +367,7 @@ def create_gui():
     label_dev_value.pack(side="left", fill="x", expand=True, padx=(4, 0))
 
 
-    # 结果显示区域
+    # 结果显示区域（占据中间可伸缩空间）
     text_result = tk.Text(
         root,
         height=11,
@@ -375,8 +375,9 @@ def create_gui():
         font=("Microsoft YaHei", 10),
     )
 
-    # 不让日志框占用全部可扩展空间，给底部按钮留出固定区域
-    text_result.pack(fill="both", expand=False, padx=10, pady=(5, 10))
+    # 允许在窗口拉伸时随高度伸缩
+    text_result.pack(side="top", fill="both", expand=True, padx=10, pady=(5, 10))
+
 
     def refresh_ids():
         ok, ids = read_current_ids()
@@ -396,6 +397,7 @@ def create_gui():
         text_result.insert("end", text)
         text_result.config(state="disabled")
 
+
     def on_run_clicked():
         ok, msg = run_update_with_result()
         append_result(msg)
@@ -404,6 +406,7 @@ def create_gui():
             messagebox.showinfo(u"完成", u"已成功重置 ID")
         else:
             messagebox.showerror(u"错误", msg)
+
 
     def on_clean_clicked():
         # 从输入框获取天数，非法输入则回退到默认 3 天
@@ -459,6 +462,7 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"备份清理完成")
 
+
     def on_clean_all_clicked():
         ok, msg, to_delete = delete_all_backups()
 
@@ -502,9 +506,12 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"所有备份已删除")
 
+
     # 底部一行：左(生成新 ID)，中(保留最近天数+清理备份)，右(全部删除备份)
     frame_btn = tk.Frame(root, bg="#dbe2ef")
-    frame_btn.pack(fill="x", padx=10, pady=(5, 10))
+    # 固定在窗口底部，窗口拉伸时保持贴底
+    frame_btn.pack(side="bottom", fill="x", padx=10, pady=(5, 10))
+
 
     # 统一按钮样式
     btn_font = ("Microsoft YaHei", 10, "bold")
