@@ -367,7 +367,7 @@ def create_gui():
 
 
     # 结果显示区域
-    text_result = tk.Text(root, height=14)
+    text_result = tk.Text(root, height=14, bg="#ececec")
 
     text_result.pack(fill="both", expand=True, padx=10, pady=(5, 10))
 
