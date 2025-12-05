@@ -367,9 +367,15 @@ def create_gui():
 
 
     # 结果显示区域
-    text_result = tk.Text(root, height=14, bg="#ececec")
+    text_result = tk.Text(
+        root,
+        height=11,
+        bg="#ececec",
+        font=("Microsoft YaHei", 10),
+    )
 
-    text_result.pack(fill="both", expand=True, padx=10, pady=(5, 10))
+    # 不让日志框占用全部可扩展空间，给底部按钮留出固定区域
+    text_result.pack(fill="both", expand=False, padx=10, pady=(5, 10))
 
     def refresh_ids():
         ok, ids = read_current_ids()
