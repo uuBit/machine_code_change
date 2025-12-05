@@ -102,11 +102,7 @@ def run_update_with_result():
     """执行更新逻辑并返回(成功标志, 消息字符串)"""
     try:
         storage_path = get_storage_path()
-
-        # 备份
-        backup_file(storage_path)
-
-        # 更新 ID
+        # 更新 ID（不再创建备份）
         machine_id, mac_machine_id, dev_device_id = update_storage_file(storage_path)
 
         msg_lines = [
@@ -131,7 +127,7 @@ def create_gui():
     # 顶部说明
     label_desc = tk.Label(
         root,
-        text=u"一键备份并重置 Cursor 的机器 ID (machineId / macMachineId / devDeviceId)",
+        text=u"一键重置 Cursor 的机器 ID (machineId / macMachineId / devDeviceId)",
         anchor="w",
         justify="left"
     )
@@ -171,7 +167,7 @@ def create_gui():
     frame_btn = tk.Frame(root)
     frame_btn.pack(fill="x", padx=10, pady=(0, 10))
 
-    btn_run = tk.Button(frame_btn, text=u"备份并生成新 ID", command=on_run_clicked)
+    btn_run = tk.Button(frame_btn, text=u"生成新 ID", command=on_run_clicked)
     btn_run.pack(side="left")
 
     root.mainloop()
