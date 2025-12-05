@@ -240,32 +240,38 @@ def delete_all_backups():
 def create_gui():
     """创建并运行图形界面"""
     root = tk.Tk()
-    root.title("Cursor Machine ID 工具")
+    root.title("XMachineID")
     root.geometry("620x380")
+    root.configure(bg="#dbe2ef")
 
     # 顶部说明
     label_desc = tk.Label(
         root,
-        text=u"一键重置 Cursor 的机器 ID (machineId / macMachineId / devDeviceId)",
+        text=u"重置设备的机器 ID (machineId（设备 ID） / macMachineId（Mac 设备 ID） / devDeviceId（开发设备 ID）)",
         anchor="w",
-        justify="left"
+        justify="left",
+        bg="#dbe2ef"
     )
+
     label_desc.pack(fill="x", padx=10, pady=(10, 5))
 
     # 显示当前配置文件路径
     storage_path = get_storage_path()
-    frame_path = tk.Frame(root)
+    frame_path = tk.Frame(root, bg="#dbe2ef")
+
     frame_path.pack(fill="x", padx=10, pady=5)
 
-    tk.Label(frame_path, text=u"配置文件路径:").pack(side="left")
+    tk.Label(frame_path, text=u"配置文件路径:", bg="#dbe2ef").pack(side="left")
 
     entry_path = tk.Entry(frame_path)
+
     entry_path.insert(0, storage_path)
     entry_path.config(state="readonly")
     entry_path.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
     # 结果显示区域
     text_result = tk.Text(root, height=12)
+
     text_result.pack(fill="both", expand=True, padx=10, pady=(5, 10))
 
     def append_result(text):
@@ -380,23 +386,33 @@ def create_gui():
         else:
             messagebox.showinfo(u"完成", u"所有备份已删除")
 
-    frame_btn = tk.Frame(root)
+    frame_btn = tk.Frame(root, bg="#dbe2ef")
     frame_btn.pack(fill="x", padx=10, pady=(0, 10))
 
-    btn_run = tk.Button(frame_btn, text=u"生成新 ID", command=on_run_clicked)
-    btn_run.pack(side="left")
+    # 统一按钮样式
+    btn_font = ("Microsoft YaHei", 10, "bold")
+    btn_kwargs = {
+        "bg": "#112d4e",
+        "fg": "white",
+        "activebackground": "#112d4e",
+        "activeforeground": "white",
+        "font": btn_font,
+    }
+
+    btn_run = tk.Button(frame_btn, text=u"生成新 ID", command=on_run_clicked, **btn_kwargs)
+    btn_run.pack(side="left", padx=(0, 10))
 
     # 清理备份相关控件
-    tk.Label(frame_btn, text=u"保留最近天数:").pack(side="left", padx=(15, 0))
+    tk.Label(frame_btn, text=u"保留最近天数:", bg="#dbe2ef").pack(side="left", padx=(5, 0))
     entry_days = tk.Entry(frame_btn, width=5)
     entry_days.insert(0, "3")
-    entry_days.pack(side="left", padx=(3, 0))
+    entry_days.pack(side="left", padx=(5, 10))
 
-    btn_clean = tk.Button(frame_btn, text=u"清理备份", command=on_clean_clicked)
-    btn_clean.pack(side="left", padx=(10, 0))
+    btn_clean = tk.Button(frame_btn, text=u"清理备份", command=on_clean_clicked, **btn_kwargs)
+    btn_clean.pack(side="left", padx=(0, 10))
 
-    btn_clean_all = tk.Button(frame_btn, text=u"全部删除备份", command=on_clean_all_clicked)
-    btn_clean_all.pack(side="left", padx=(10, 0))
+    btn_clean_all = tk.Button(frame_btn, text=u"全部删除备份", command=on_clean_all_clicked, **btn_kwargs)
+    btn_clean_all.pack(side="left", padx=(0, 0))
 
     root.mainloop()
 
