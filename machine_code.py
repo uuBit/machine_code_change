@@ -538,14 +538,15 @@ def create_gui():
 
     refresh_ids()
 
-    # 使窗口居中并向上偏移一部分
+    # 使窗口居中并向上偏移一部分（约 10% 屏幕高度）
     root.update_idletasks()
     sw = root.winfo_screenwidth()
     sh = root.winfo_screenheight()
     x = (sw - win_w) // 2
     y_center = (sh - win_h) // 2
-    offset = int(sh * 0.2)
+    offset = int(sh * 0.1)
     y = max(0, y_center - offset)
+
     root.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
     root.mainloop()
